@@ -53,7 +53,7 @@ def AddCountsForFile(filePath, counts):
     # Converting list to set removes duplicates
     bugCount = len(set(bugs))
 
-    counts.append([name, root, lineCount, float(bugCount) / lineCount])
+    counts.append([name, root, lineCount, bugCount])
     return counts
 
 
@@ -66,17 +66,17 @@ def CountBugs(repositoryPath):
     prevPath = os.getcwd()
     os.chdir(repositoryPath)
     
-    bugs = [['File', 'Parent', 'Line Count', 'Bug Count']]
+    counts = [['File', 'Parent', 'Line Count', 'Bug Count']]
 
     # Shell out a find command to get files to process
     command = '/usr/bin/find . -depth 1 -name *.h -or -name *.cpp'
     findProc = subprocess.Popen(shlex.split(command),stdout=subprocess.PIPE)
     for filePath in iter(findProc.stdout.readline,''):
-        bugs = AddCountsForFile(filePath.rstrip(), bugs)
+        counts = AddCountsForFile(filePath.rstrip(), counts)
 
     os.chdir(prevPath)
 
-    return bugs
+    return counts
     
 path = sys.argv[1]
 #print CountBugsForFile(path + '/Screens/AboutScreen.cpp')
