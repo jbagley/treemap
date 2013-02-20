@@ -7,9 +7,11 @@ import subprocess
 import sys
 
 bugRegEx = re.compile(r'(9[0-9]{3}|1[0-9]{4})')
+
+# Track which subdirectories have been created
 parents = []
 
-def AddCountsForFile(filePath, bugs):
+def AddCountsForFile(filePath, counts):
     '''Count bugs associated with filePath and return as list with the filename, parent, line count and bug count
 
        filePath - the path to the file in the repo, appended to svnURL.
@@ -30,7 +32,10 @@ def AddCountsForFile(filePath, bugs):
             root = 'root'
         if not root in parents:
             parents.append(root)
-            bugs.append([root, None, 0, 0])
+            parent = 'root'
+            if root == 'root':
+                parent = None
+            counts.append([root, parent, 0, 0])
 
     # Look for bug numbers 9xxx or 1xxxx, i.e. integers higher than 8999
     bugs = []
@@ -39,7 +44,7 @@ def AddCountsForFile(filePath, bugs):
         bugs += bugRegEx.findall(line)
  
     try:
-        lineCount = subprocess.check_output('wc -l ' + filePath, shell=True).lstrip().split(' ')[0]
+        lineCount = int(subprocess.check_output('wc -l ' + filePath, shell=True).lstrip().split(' ')[0])
     except ValueError as e:
         print >> sys.stderr, filePath, e
         raise
@@ -48,7 +53,8 @@ def AddCountsForFile(filePath, bugs):
     # Converting list to set removes duplicates
     bugCount = len(set(bugs))
 
-    bugs.append([name, root, lineCount, bugCount])
+    counts.append([name, root, lineCount, float(bugCount) / lineCount])
+    return counts
 
 
 def CountBugs(repositoryPath):
@@ -66,12 +72,12 @@ def CountBugs(repositoryPath):
     command = '/usr/bin/find . -depth 1 -name *.h -or -name *.cpp'
     findProc = subprocess.Popen(shlex.split(command),stdout=subprocess.PIPE)
     for filePath in iter(findProc.stdout.readline,''):
-        AddCountsForFile(filePath.rstrip(), bugs)
+        bugs = AddCountsForFile(filePath.rstrip(), bugs)
 
     os.chdir(prevPath)
 
     return bugs
     
-path='/Users/jbagley/dev/AL/BeatKangz/StreetBoxx2/Firmware'
+path = sys.argv[1]
 #print CountBugsForFile(path + '/Screens/AboutScreen.cpp')
 print CountBugs(path)
